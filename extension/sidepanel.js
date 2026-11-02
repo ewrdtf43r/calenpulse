@@ -1,6 +1,6 @@
 const $ = (selector) => document.querySelector(selector);
 
-const state = { events: [], editingId: null, settings: null };
+const state = { events: [], editing: null, settings: null };
 
 function send(type, data) {
   return new Promise((resolve, reject) => {
@@ -81,6 +81,13 @@ function showError(message) {
   showState('error-state');
 }
 
+const CONNECT_TEXT = 'События будут в боковой панели, а напоминания — в браузере, Telegram и Discord.';
+
+function showConnect(message) {
+  $('#connect-text').textContent = message || CONNECT_TEXT;
+  showState('connect-state');
+}
+
 function renderEvents() {
   const now = Date.now();
   const visible = state.events
@@ -96,7 +103,10 @@ function renderEvents() {
     const when = isAllDay(next)
       ? `${dayLabel(startDate(next))} · весь день`
       : `${relativeToStart(startDate(next).getTime())} · ${timeOf(next.start)}–${timeOf(next.end)}`;
-    $('#next-meta').textContent = [when, next.location].filter(Boolean).join(' · ');
+    const nextBits = [when];
+    if (!next.primary) nextBits.push(next.calendarName);
+    if (next.location) nextBits.push(next.location);
+    $('#next-meta').textContent = nextBits.filter(Boolean).join(' · ');
   } else {
     nextCard.hidden = true;
   }
@@ -127,6 +137,7 @@ function renderEvents() {
     const card = document.createElement('article');
     card.className = `event${isAllDay(event) ? ' all-day' : ''}`;
     card.tabIndex = 0;
+    if (event.color) card.style.borderLeftColor = event.color;
 
     const time = document.createElement('div');
     time.className = 'event-time';
@@ -149,10 +160,20 @@ function renderEvents() {
 
     const meta = document.createElement('p');
     meta.className = 'event-meta';
-    meta.textContent = event.location || (event.description ? event.description.replace(/\s+/g, ' ') : '');
+    const bits = [];
+    if (!event.primary) bits.push(event.calendarName);
+    if (event.location) bits.push(event.location);
+    else if (event.description) bits.push(event.description.replace(/\s+/g, ' '));
+    meta.textContent = bits.join(' · ');
+    if (!event.primary) {
+      const dot = document.createElement('span');
+      dot.className = 'event-dot';
+      dot.style.background = event.color || 'var(--accent)';
+      meta.prepend(dot);
+    }
 
     body.append(title);
-    if (meta.textContent) body.append(meta);
+    if (bits.length) body.append(meta);
     card.append(time, body);
 
     const open = () => openEditor(event);
@@ -179,7 +200,11 @@ async function loadEvents() {
     renderEvents();
   } catch (e) {
     if (/не подключён|refresh token|credential/i.test(e.message)) {
-      showState('connect-state');
+      showConnect();
+    } else if (/insufficient|forbidden|403|scope/i.test(e.message)) {
+      showConnect(
+        'Google не выдал доступ к списку календарей. Нажмите «Подключить Google» — Google попросит подтвердить новый доступ.'
+      );
     } else {
       showError(e.message);
     }
@@ -208,11 +233,18 @@ function openEditor(event = null) {
     if (event.htmlLink) chrome.tabs.create({ url: event.htmlLink });
     return;
   }
+  if (event && (event.accessRole === 'reader' || event.accessRole === 'freeBusyReader')) {
+    toast('Календарь только для чтения — открываю событие в Google');
+    if (event.htmlLink) chrome.tabs.create({ url: event.htmlLink });
+    return;
+  }
 
-  state.editingId = event?.id || null;
+  state.editing = event ? { id: event.id, calendarId: event.calendarId } : null;
   $('#editor-title').textContent = event ? 'Событие' : 'Новое событие';
   $('#editor-delete').hidden = !event;
   $('#form-error').hidden = true;
+  $('#editor-calendar').hidden = !event || event.primary;
+  $('#editor-calendar').textContent = event && !event.primary ? `Календарь: ${event.calendarName}` : '';
 
   if (event) {
     const start = startDate(event);
@@ -237,7 +269,7 @@ function openEditor(event = null) {
 
 function closeEditor() {
   $('#editor').close();
-  state.editingId = null;
+  state.editing = null;
 }
 
 function formError(message) {
@@ -273,8 +305,15 @@ async function submitForm(e) {
   const saveButton = $('#editor-save');
   saveButton.disabled = true;
   try {
-    if (state.editingId) await send('events:update', { id: state.editingId, ...payload });
-    else await send('events:create', payload);
+    if (state.editing) {
+      await send('events:update', {
+        id: state.editing.id,
+        calendarId: state.editing.calendarId,
+        ...payload,
+      });
+    } else {
+      await send('events:create', payload);
+    }
     closeEditor();
     toast('Сохранено в Google Календаре');
     await loadEvents();
@@ -286,11 +325,14 @@ async function submitForm(e) {
 }
 
 async function deleteCurrent() {
-  if (!state.editingId) return;
+  if (!state.editing) return;
   const summary = $('#f-summary').value.trim() || 'это событие';
   if (!confirm(`Удалить «${summary}»?`)) return;
   try {
-    await send('events:delete', { id: state.editingId });
+    await send('events:delete', {
+      id: state.editing.id,
+      calendarId: state.editing.calendarId,
+    });
     closeEditor();
     toast('Событие удалено');
     await loadEvents();
@@ -310,7 +352,10 @@ async function connect() {
     state.settings = await send('settings:get');
     await loadEvents();
   } catch (err) {
-    showError(err.message);
+    const message = /only one web auth flow/i.test(err.message)
+      ? 'Окно входа Google уже открыто. Закройте его и нажмите «Подключить Google» снова.'
+      : err.message;
+    showError(message);
   } finally {
     button.disabled = false;
     button.textContent = 'Подключить Google';
@@ -320,7 +365,14 @@ async function connect() {
 async function init() {
   $('#refresh').addEventListener('click', () => loadEvents());
   $('#settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
-  $('#retry').addEventListener('click', () => loadEvents());
+  $('#retry').addEventListener('click', async () => {
+    const status = await send('auth:status').catch(() => ({ connected: false }));
+    if (!status.connected) {
+      showConnect();
+      return;
+    }
+    loadEvents();
+  });
   $('#connect').addEventListener('click', connect);
   $('#new-event').addEventListener('click', () => openEditor());
   $('#event-form').addEventListener('submit', submitForm);
@@ -334,7 +386,7 @@ async function init() {
   state.settings = await send('settings:get');
   const status = await send('auth:status');
   if (!status.connected) {
-    showState('connect-state');
+    showConnect();
     return;
   }
   $('#account').textContent = status.label || '';

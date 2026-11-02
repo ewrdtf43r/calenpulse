@@ -67,4 +67,4 @@ export function buildReminderText({ event, lead, timezone }) {
   return lines.join('\n');
 }
 
-export const TEST_TEXT = '✅ CalPulse: тестовое уведомление. Канал работает.';
+export const TEST_TEXT = '✅ CalenPulse: тестовое уведомление. Канал работает.';

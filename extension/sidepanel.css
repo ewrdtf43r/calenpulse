@@ -181,6 +181,7 @@ main {
   margin-bottom: 8px;
   background: var(--bg-elev);
   border: 1px solid var(--line);
+  border-left-width: 3px;
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
@@ -213,6 +214,21 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.event-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: 1px;
+}
+
+.editor-calendar {
+  margin: -6px 0 12px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .bottombar {

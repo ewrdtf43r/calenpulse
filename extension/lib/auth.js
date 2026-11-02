@@ -1,8 +1,17 @@
-import { OAUTH } from './config.js';
-import { getAuth, setAuth, clearAuth } from './store.js';
+import { OAUTH_DEFAULTS } from './config.js';
+import { getAuth, setAuth, clearAuth, getSettings } from './store.js';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+
+export async function getOAuthConfig() {
+  const settings = await getSettings();
+  return {
+    clientId: settings.oauth.clientId || OAUTH_DEFAULTS.clientId,
+    clientSecret: settings.oauth.clientSecret || OAUTH_DEFAULTS.clientSecret,
+    scope: OAUTH_DEFAULTS.scope,
+  };
+}
 
 function base64url(bytes) {
   let binary = '';
@@ -16,8 +25,10 @@ async function codeChallenge(verifier) {
 }
 
 async function tokenRequest(params) {
-  const body = new URLSearchParams({ client_id: OAUTH.clientId, ...params });
-  if (OAUTH.clientSecret) body.set('client_secret', OAUTH.clientSecret);
+  const oauth = await getOAuthConfig();
+  if (!oauth.clientId) throw new Error('Не задан OAuth Client ID — заполните в настройках расширения');
+  const body = new URLSearchParams({ client_id: oauth.clientId, ...params });
+  if (oauth.clientSecret) body.set('client_secret', oauth.clientSecret);
   const res = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -29,18 +40,19 @@ async function tokenRequest(params) {
 }
 
 export async function connectGoogle() {
-  if (OAUTH.clientId.startsWith('YOUR_CLIENT_ID')) {
-    throw new Error('В lib/config.js не заполнен OAuth client ID');
+  const oauth = await getOAuthConfig();
+  if (!oauth.clientId) {
+    throw new Error('Не задан OAuth Client ID — заполните его в настройках расширения');
   }
   const redirectUri = chrome.identity.getRedirectURL();
   const state = crypto.randomUUID();
   const verifier = base64url(crypto.getRandomValues(new Uint8Array(32)));
   const authUrl = new URL(AUTH_URL);
   authUrl.search = new URLSearchParams({
-    client_id: OAUTH.clientId,
+    client_id: oauth.clientId,
     response_type: 'code',
     redirect_uri: redirectUri,
-    scope: OAUTH.scope,
+    scope: oauth.scope,
     access_type: 'offline',
     prompt: 'consent',
     state,

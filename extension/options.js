@@ -1,3 +1,5 @@
+import { OAUTH_DEFAULTS } from './lib/config.js';
+
 const $ = (selector) => document.querySelector(selector);
 
 const state = { settings: null, auth: null, busy: false };
@@ -35,6 +37,7 @@ function paintAuth() {
     $('#auth-status').textContent = `Подключено: ${auth.label}`;
     $('#btn-connect').hidden = true;
     $('#btn-disconnect').hidden = false;
+    $('#btn-reconnect').hidden = false;
     if (auth.hasRefreshToken === false) {
       $('#auth-status').textContent += ' (без refresh token — сервер 24/7 не сможет работать)';
     }
@@ -42,6 +45,7 @@ function paintAuth() {
     $('#auth-status').textContent = 'Google Календарь не подключён.';
     $('#btn-connect').hidden = false;
     $('#btn-disconnect').hidden = true;
+    $('#btn-reconnect').hidden = true;
   }
 }
 
@@ -58,6 +62,8 @@ function paint() {
   $('#tg-chat').value = s.telegram.chatId;
   $('#dc-enabled').checked = s.discord.enabled;
   $('#dc-webhook').value = s.discord.webhookUrl;
+  $('#oauth-client-id').value = s.oauth.clientId || OAUTH_DEFAULTS.clientId;
+  $('#oauth-client-secret').value = s.oauth.clientSecret || '';
 
   const status = s.lastSyncError
     ? `Последняя синхронизация не удалась: ${s.lastSyncError}`
@@ -76,6 +82,10 @@ function readForm() {
     syncKey: $('#sync-key').value.trim(),
     localNotifications: $('#local-notifications').checked,
     reminders,
+    oauth: {
+      clientId: $('#oauth-client-id').value.trim(),
+      clientSecret: $('#oauth-client-secret').value.trim(),
+    },
     telegram: {
       enabled: $('#tg-enabled').checked,
       botToken: $('#tg-token').value.trim(),
@@ -130,9 +140,17 @@ function validate(settings) {
 async function save({ quiet = false } = {}) {
   const payload = readForm();
   validate(payload);
+  const previousClientId = state.settings.oauth.clientId || OAUTH_DEFAULTS.clientId;
   state.settings = await send('settings:save', payload);
   paint();
-  if (!quiet) toast('Настройки сохранены');
+  if (!quiet) {
+    const nextClientId = payload.oauth.clientId || OAUTH_DEFAULTS.clientId;
+    toast(
+      nextClientId !== previousClientId
+        ? 'Client ID изменён — нажмите «Обновить доступ»'
+        : 'Настройки сохранены'
+    );
+  }
   return state.settings;
 }
 
@@ -214,6 +232,15 @@ async function init() {
     paintAuth();
     toast('Google Календарь отключён');
   });
+
+  $('#btn-reconnect').addEventListener('click', (e) =>
+    withBusy(e.currentTarget, async () => {
+      await send('auth:connect');
+      state.auth = await send('auth:status');
+      paintAuth();
+      toast('Доступ к Google обновлён');
+    })
+  );
 
   $('#btn-test-browser').addEventListener('click', (e) =>
     withBusy(e.currentTarget, async () => {

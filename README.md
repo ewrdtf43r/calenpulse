@@ -56,32 +56,33 @@ docs/                 страницы для GitHub Pages (политика к�
 
 1. Создайте проект на [console.cloud.google.com](https://console.cloud.google.com/).
 2. **APIs & Services → Library → Google Calendar API → Enable.**
-3. **OAuth consent screen**: тип **External**, название `CalPulse`, укажите e-mail поддержки и контакт разработчика.
-   - В разделе **Scopes** добавьте `https://www.googleapis.com/auth/calendar.events` (это sensitive scope).
+3. **OAuth consent screen**: тип **External**, название `CalenPulse`, укажите e-mail поддержки и контакт разработчика.
+   - В разделе **Scopes** добавьте `https://www.googleapis.com/auth/calendar.events`
+     и `https://www.googleapis.com/auth/calendar.calendarlist.readonly`.
    - Пока приложение в статусе **Testing**, в **Test users** добавьте аккаунты, которым разрешён вход (до 100).
-4. **Credentials → Create credentials → OAuth client ID**:
-   - Application type: **Chrome Extension**;
-   - Item ID: ID вашего расширения (см. шаг 2 — 32 символа из `chrome://extensions`);
-   - скопируйте **Client ID** (если Console показывает **Client secret** — скопируйте и его).
-5. Вставьте значения в [`extension/lib/config.js`](extension/lib/config.js):
+4. **Credentials → Create credentials → OAuth client ID**, тип **Web application**:
+   - Name: `CalenPulse Web`;
+   - **Authorized redirect URIs → Add URI** → адрес из настроек расширения
+     («Данные для Google Cloud Console», раздел 2);
+   - **Create** → скопируйте **Client ID** и **Client secret**.
 
-   ```js
-   export const OAUTH = {
-     clientId: '1234567890-abcdef.apps.googleusercontent.com',
-     clientSecret: '', // только если Console его выдал
-     scope: 'https://www.googleapis.com/auth/calendar.events',
-   };
-   ```
+   > Альтернатива — тип **Chrome Extension**: тогда redirect URI не нужен, вместо него
+   > указывается **Item ID** (ID расширения), а секрет не требуется. В части версий Edge
+   > этот тип отдаёт `redirect_uri_mismatch`; Web application надёжнее.
+5. **Client ID** впишите в [`extension/lib/config.js`](extension/lib/config.js) — он публичный.
+   **Client secret** вставьте в настройках расширения (раздел **OAuth-клиент**): он хранится
+   только в `chrome.storage.local`, в репозиторий и в git-историю не попадает.
 
-> Redirect URI для типа «Chrome Extension» выводится из ID расширения. Точное значение
-> показано в настройках расширения («Данные для Google Cloud Console»). Если создаёте клиент
-> типа **Web application** — добавьте этот redirect URI в Authorized redirect URIs.
+> Redirect URI показан в настройках расширения кнопкой «Скопировать redirect URI».
+> Для типа **Web application** он должен быть добавлен в Authorized redirect URIs
+> ровно как скопирован, со слэшем в конце.
 
 ## 2. Расширение
 
 1. Откройте `edge://extensions` (или `chrome://extensions`), включите **Режим разработчика**.
 2. **Загрузить распакованное** → выберите папку `extension/`.
-3. Скопируйте ID расширения, вставьте в OAuth-клиент (шаг 1.4), заполните `lib/config.js`.
+3. Скопируйте ID расширения, вставьте в OAuth-клиент (шаг 1.4), откройте настройки →
+   **OAuth-клиент** и вставьте Client secret (Client ID уже указан в `lib/config.js`).
 4. Нажмите **Обновить** на карточке расширения.
 5. Откройте настройки (⚙ в боковой панели) → **Подключить Google**.
 6. Для 24/7: заполните адрес сервера и ключ синхронизации (кнопка «Сгенерировать»),
@@ -109,27 +110,27 @@ node -v
 ### 3.2. Код
 
 ```bash
-sudo mkdir -p /opt/calpulse && sudo chown "$USER":"$USER" /opt/calpulse
+sudo mkdir -p /opt/calenpulse && sudo chown "$USER":"$USER" /opt/calenpulse
 ```
 
 ```bash
-git clone https://github.com/<ваш-логин>/calpulse.git /opt/calpulse
+git clone https://github.com/<ваш-логин>/CalenPulse.git /opt/calenpulse
 ```
 
 ### 3.3. Зависимости и конфиг
 
 ```bash
-cd /opt/calpulse/server && npm ci --omit=dev
+cd /opt/calenpulse/server && npm ci --omit=dev
 ```
 
 ```bash
-cp /opt/calpulse/server/.env.example /opt/calpulse/server/.env
+cp /opt/calenpulse/server/.env.example /opt/calenpulse/server/.env
 ```
 
 Проверка локально (без HTTPS):
 
 ```bash
-cd /opt/calpulse/server && ALLOW_HTTP=1 node src/index.js
+cd /opt/calenpulse/server && ALLOW_HTTP=1 node src/index.js
 ```
 
 ```bash
@@ -183,7 +184,7 @@ sudo npm install -g pm2
 ```
 
 ```bash
-cd /opt/calpulse/server && pm2 start ecosystem.config.cjs
+cd /opt/calenpulse/server && pm2 start ecosystem.config.cjs
 ```
 
 ```bash
@@ -199,7 +200,7 @@ pm2 startup
 ### 3.6. Вариант без домена: Cloudflare Tunnel
 
 Если домен/сертификат не хочется — установите `cloudflared` и создайте именованный туннель
-(Cloudflare выдаст HTTPS-адрес вида `https://calpulse.example.com`).
+(Cloudflare выдаст HTTPS-адрес вида `https://calenpulse.example.com`).
 Для быстрой проверки подойдёт временный туннель:
 
 ```bash
@@ -235,7 +236,7 @@ server/data/enc.key         ключ шифрования (не коммитит
 - **Chrome Web Store** — разовый взнос $5: [chrome.google.com/webstore/devconsole](https://chrome.google.com/webstore/devconsole).
 - ZIP для загрузки: содержимое папки `extension/` (манифест должен лежать в корне архива).
 - Название в сторе не должно начинаться с «Google»: используйте, например,
-  **«CalPulse — Calendar alerts»**, а слово Google — только в описании.
+  **«CalenPulse — Calendar alerts»**, а слово Google — только в описании.
 - Материалы: иконка 128×128, минимум 1 скриншот 1280×800 (лучше 3–5), промо 440×280 для Edge.
 - URL политики конфиденциальности: разместите `docs/` на GitHub Pages
   (Settings → Pages → Source: `main` / `/docs`). Ссылку на `privacy.html` указывайте в сторе.
@@ -251,7 +252,10 @@ server/data/enc.key         ключ шифрования (не коммитит
 
 ## 6. Ограничения MVP
 
-- Только основной календарь (`primary`); выбор нескольких календарей — следующая итерация.
+- Показываются все календари, отмеченные галочкой в Google Календаре; цвет события берётся
+  из цвета календаря. Скрытые календари и календари с доступом «только занятость» не выводятся.
+- События календарей только для чтения открываются в Google Календаре, редактировать их из панели нельзя.
+- Сервер 24/7 пока опрашивает только основной календарь; остальные — следующая итерация.
 - События «на весь день» показываются, но напоминания по ним не отправляются.
 - Браузерные уведомления работают только при запущенном браузере; 24/7 обеспечивает сервер.
 - Сервер хранит данные в JSON-файле — этого достаточно для сотен пользователей; для больших
@@ -269,11 +273,13 @@ server/data/enc.key         ключ шифрования (не коммитит
 - `data/enc.key` и `data/accounts.json` создаются с правами `600`, каталог — `700`.
 - Ключ синхронизации не хранится на сервере: в базе лежит только SHA-256 от него.
 - Refresh token и токены каналов шифруются AES-256-GCM; сервер не отдаёт их в API.
+- Client secret хранится только в `chrome.storage.local` (страница настроек) и в публичном
+  репозитории отсутствует; Client ID публичный по определению.
 - Сделайте бэкап `data/enc.key`: без него расшифровать `accounts.json` невозможно.
 
 ## 8. Git
 
-Репозиторий: **`calpulse`**
+Репозиторий: **`CalenPulse`**
 
 Описание (GitHub, короткое): `Google Calendar side panel for Edge/Chrome with browser, Telegram and Discord reminders and a 24/7 polling backend.`
 
@@ -288,16 +294,16 @@ git add .
 ```
 
 ```bash
-git commit -m "feat: CalPulse 0.1.0 — боковая панель календаря и напоминания в браузере, Telegram и Discord"
+git commit -m "feat: CalenPulse 0.2.0 — мультикалендарь с цветами и напоминания в браузере, Telegram и Discord"
 ```
 
 ```bash
-gh repo create calpulse --private --description "Google Calendar side panel for Edge/Chrome with browser, Telegram and Discord reminders and a 24/7 polling backend." --source=. --remote=origin
+gh repo create CalenPulse --private --description "Google Calendar side panel for Edge/Chrome with browser, Telegram and Discord reminders and a 24/7 polling backend." --source=. --remote=origin
 ```
 
 ```bash
 git push -u origin main
 ```
 
-Или без `gh`: создайте пустой репозиторий `calpulse` на GitHub и выполните
-`git remote add origin https://github.com/<логин>/calpulse.git`, затем `git push -u origin main`.
+Или без `gh`: создайте пустой репозиторий `CalenPulse` на GitHub и выполните
+`git remote add origin https://github.com/<логин>/CalenPulse.git`, затем `git push -u origin main`.

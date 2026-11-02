@@ -1,9 +1,9 @@
 {
-  "name": "calpulse-server",
+  "name": "calenpulse-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "24/7 polling backend for CalPulse: Google Calendar → Telegram/Discord",
+  "description": "24/7 polling backend for CalenPulse: Google Calendar → Telegram/Discord",
   "engines": {
     "node": ">=20"
   },

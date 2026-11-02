@@ -3,6 +3,7 @@ const DEFAULTS = {
   syncKey: '',
   localNotifications: true,
   reminders: [60, 10],
+  oauth: { clientId: '', clientSecret: '' },
   telegram: { enabled: false, botToken: '', chatId: '' },
   discord: { enabled: false, webhookUrl: '' },
   lastSyncAt: 0,
@@ -13,6 +14,7 @@ function mergeSettings(stored = {}) {
   return {
     ...DEFAULTS,
     ...stored,
+    oauth: { ...DEFAULTS.oauth, ...(stored.oauth || {}) },
     telegram: { ...DEFAULTS.telegram, ...(stored.telegram || {}) },
     discord: { ...DEFAULTS.discord, ...(stored.discord || {}) },
     reminders: Array.isArray(stored.reminders) ? stored.reminders : DEFAULTS.reminders,

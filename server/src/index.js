@@ -292,7 +292,7 @@ app.use((err, _req, res, _next) => {
 });
 
 const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`CalPulse server on :${port} (poll every ${pollIntervalMs} ms, https required: ${!allowHttp})`);
+  console.log(`CalenPulse server on :${port} (poll every ${pollIntervalMs} ms, https required: ${!allowHttp})`);
 });
 
 function shutdown(signal) {

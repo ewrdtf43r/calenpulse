@@ -3,8 +3,8 @@ import * as calendar from './lib/calendar.js';
 import { getSettings, saveSettings, getSentMap, saveSentMap } from './lib/store.js';
 import { pushConfig, getServerStatus, sendServerTest } from './lib/server.js';
 
-const TICK_ALARM = 'calpulse-tick';
-const SYNC_ALARM = 'calpulse-sync';
+const TICK_ALARM = 'calenpulse-tick';
+const SYNC_ALARM = 'calenpulse-sync';
 
 function ensureAlarms() {
   chrome.alarms.create(TICK_ALARM, { periodInMinutes: 1 });
@@ -29,6 +29,43 @@ function leadLabel(minutes) {
   return `Через ${minutes} мин`;
 }
 
+async function listAllEvents({ timeMin, timeMax } = {}) {
+  const calendars = await calendar.listCalendars();
+  const wanted = calendars.filter(
+    (cal) => cal.selected && cal.accessRole !== 'freeBusyReader'
+  );
+
+  const results = await Promise.all(
+    wanted.map(async (cal) => {
+      try {
+        const events = await calendar.listEvents({
+          timeMin,
+          timeMax,
+          calendarId: cal.id,
+        });
+        return events.map((event) => ({
+          ...event,
+          calendarName: cal.summary,
+          color: cal.color,
+          primary: cal.primary,
+          accessRole: cal.accessRole,
+        }));
+      } catch (e) {
+        if (/не подключён|token|credential|401/i.test(e.message)) throw e;
+        return [];
+      }
+    })
+  );
+
+  const deduped = new Map();
+  for (const event of results.flat()) {
+    const key = `${event.iCalUID || event.id}|${event.start}`;
+    const previous = deduped.get(key);
+    if (!previous || (event.primary && !previous.primary)) deduped.set(key, event);
+  }
+  return [...deduped.values()].sort((a, b) => new Date(a.start) - new Date(b.start));
+}
+
 async function runTick() {
   const settings = await getSettings();
   await chrome.storage.local.set({ lastScan: { at: Date.now() } });
@@ -43,10 +80,10 @@ async function runTick() {
     now + (maxLead + 60) * 60_000,
     now + 7 * 86_400_000
   );
-  const events = await calendar.listEvents(
-    new Date(now - 60_000).toISOString(),
-    new Date(horizon).toISOString()
-  );
+  const events = await listAllEvents({
+    timeMin: new Date(now - 60_000).toISOString(),
+    timeMax: new Date(horizon).toISOString(),
+  });
 
   const sent = await getSentMap();
   let changed = false;
@@ -60,14 +97,15 @@ async function runTick() {
     for (const lead of settings.reminders) {
       const windowMs = lead * 60_000;
       if (diff > windowMs || diff < -60_000) continue;
-      const key = `browser|${event.id}|${event.start}|${lead}`;
+      const key = `browser|${event.calendarId}|${event.id}|${event.start}|${lead}`;
       if (sent[key]) continue;
 
+      const details = [formatTime(event.start, false), event.location].filter(Boolean);
       await chrome.notifications.create(key, {
         type: 'basic',
         iconUrl: 'icons/icon128.png',
         title: `${leadLabel(lead)} • ${event.summary}`,
-        message: [formatTime(event.start, false), event.location].filter(Boolean).join(' · '),
+        message: [event.primary ? '' : event.calendarName, ...details].filter(Boolean).join(' · '),
         priority: 2,
       });
       sent[key] = Date.now();
@@ -81,13 +119,13 @@ async function runTick() {
 chrome.notifications.onClicked.addListener(async (notificationId) => {
   chrome.notifications.clear(notificationId);
   try {
-    const [id, eventId] = notificationId.split('|');
-    if (id !== 'browser') return;
-    const events = await calendar.listEvents(
-      new Date(Date.now() - 3600_000).toISOString(),
-      new Date(Date.now() + 7 * 86_400_000).toISOString()
-    );
-    const event = events.find((e) => e.id === eventId);
+    const [prefix, calendarId, eventId] = notificationId.split('|');
+    if (prefix !== 'browser') return;
+    const events = await listAllEvents({
+      timeMin: new Date(Date.now() - 3600_000).toISOString(),
+      timeMax: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    });
+    const event = events.find((e) => e.calendarId === calendarId && e.id === eventId);
     if (event?.htmlLink) chrome.tabs.create({ url: event.htmlLink });
   } catch {
     // событие уже неактуально
@@ -118,10 +156,11 @@ const handlers = {
     return { ok: true };
   },
   'auth:status': authStatus,
-  'events:list': ({ timeMin, timeMax }) => calendar.listEvents(timeMin, timeMax),
+  'calendars:list': () => calendar.listCalendars(),
+  'events:list': (query) => listAllEvents(query),
   'events:create': (input) => calendar.createEvent(input),
-  'events:update': ({ id, ...input }) => calendar.updateEvent(id, input),
-  'events:delete': ({ id }) => calendar.deleteEvent(id),
+  'events:update': ({ id, calendarId, ...input }) => calendar.updateEvent(id, input, calendarId),
+  'events:delete': ({ id, calendarId }) => calendar.deleteEvent(id, calendarId),
   'settings:get': getSettings,
   'settings:save': (patch) => saveSettings(patch),
   'server:sync': () => pushConfig(),
@@ -131,7 +170,7 @@ const handlers = {
     await chrome.notifications.create('test', {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
-      title: 'CalPulse',
+      title: 'CalenPulse',
       message: 'Уведомления в браузере работают.',
     });
     return { ok: true };

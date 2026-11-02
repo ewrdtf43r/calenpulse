@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CalPulse — политика конфиденциальности</title>
+  <title>CalenPulse — политика конфиденциальности</title>
   <style>
     body { max-width: 760px; margin: 40px auto; padding: 0 20px; font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1b2130; }
     h1 { font-size: 26px; margin-bottom: 4px; }
@@ -14,16 +14,19 @@
   </style>
 </head>
 <body>
-  <h1>Политика конфиденциальности CalPulse</h1>
+  <h1>Политика конфиденциальности CalenPulse</h1>
   <p class="muted">Редакция от 2 ноября 2026 года</p>
 
-  <p>CalPulse — расширение для браузера, которое показывает события Google Календаря в боковой панели
+  <p>CalenPulse — расширение для браузера, которое показывает события Google Календаря в боковой панели
   и присылает напоминания в браузере, Telegram и Discord.</p>
 
   <h2>Какие данные обрабатываются</h2>
   <ul>
-    <li><strong>События Google Календаря</strong> — название, время, место и описание событий основного календаря.
+    <li><strong>События Google Календаря</strong> — название, время, место и описание событий
+      в календарях, отмеченных пользователем в Google Календаре.
       Данные читаются через официальный Google Calendar API с доступом <code>calendar.events</code>.</li>
+    <li><strong>Список календарей</strong> — названия, цвета и доступные права календарей пользователя,
+      чтобы показать события с цветовой маркировкой (доступ <code>calendar.calendarlist.readonly</code>).</li>
     <li><strong>Токены Google OAuth</strong> — access token и refresh token, полученные после явного входа в аккаунт Google.</li>
     <li><strong>Настройки уведомлений</strong> — интервалы напоминаний, токен Telegram-бота, chat id, Discord webhook.</li>
   </ul>
@@ -53,6 +56,8 @@
   <h2>Разрешения расширения</h2>
   <ul>
     <li><code>identity</code> — вход через Google OAuth.</li>
+    <li><code>calendar.events</code> — чтение и изменение событий календарей пользователя.</li>
+    <li><code>calendar.calendarlist.readonly</code> — чтение списка календарей и их цветов.</li>
     <li><code>storage</code> — хранение токенов и настроек локально.</li>
     <li><code>alarms</code>, <code>notifications</code> — напоминания в браузере.</li>
     <li><code>sidePanel</code> — интерфейс в боковой панели.</li>

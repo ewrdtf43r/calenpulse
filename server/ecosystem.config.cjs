@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'calpulse',
+      name: 'calenpulse',
       script: 'src/index.js',
       cwd: __dirname,
       env: {

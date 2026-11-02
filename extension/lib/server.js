@@ -1,5 +1,5 @@
 import { getSettings, saveSettings, getAuth } from './store.js';
-import { OAUTH } from './config.js';
+import { getOAuthConfig } from './auth.js';
 
 export function normalizeServerUrl(raw) {
   const value = (raw || '').trim().replace(/\/+$/, '');
@@ -31,16 +31,18 @@ async function api(path, { method = 'GET', body } = {}) {
 export async function pushConfig() {
   const settings = await getSettings();
   const auth = await getAuth();
+  const oauth = await getOAuthConfig();
   if (!settings.serverUrl || !settings.syncKey) throw new Error('Сервер не настроен');
   if (!auth?.refreshToken) throw new Error('Нет refresh token — переподключите Google');
+  if (!oauth.clientId) throw new Error('Не задан OAuth Client ID — заполните в настройках');
 
   try {
     const data = await api('/api/account', {
       method: 'PUT',
       body: {
         refreshToken: auth.refreshToken,
-        clientId: OAUTH.clientId,
-        clientSecret: OAUTH.clientSecret,
+        clientId: oauth.clientId,
+        clientSecret: oauth.clientSecret,
         label: auth.label || '',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         reminders: settings.reminders,

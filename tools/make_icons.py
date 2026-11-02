@@ -1,4 +1,4 @@
-"""Генерирует PNG-иконки CalPulse без сторонних зависимостей."""
+"""Генерирует PNG-иконки CalenPulse без сторонних зависимостей."""
 import os
 import struct
 import zlib

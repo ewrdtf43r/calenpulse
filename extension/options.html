@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>CalPulse — настройки</title>
+  <title>CalenPulse — настройки</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
@@ -12,7 +12,7 @@
       <div class="brand">
         <img src="icons/icon48.png" alt="" width="32" height="32">
         <div>
-          <h1>CalPulse</h1>
+          <h1>CalenPulse</h1>
           <p class="muted">Google Календарь в боковой панели и напоминания в трёх каналах</p>
         </div>
       </div>
@@ -23,9 +23,10 @@
       <p id="auth-status" class="muted">Проверяю…</p>
       <div class="row">
         <button id="btn-connect" class="primary">Подключить Google</button>
+        <button id="btn-reconnect" hidden>Обновить доступ</button>
         <button id="btn-disconnect" hidden>Отключить</button>
       </div>
-      <p class="hint">Используется доступ <code>calendar.events</code>: чтение и изменение событий основного календаря.</p>
+      <p class="hint">Используются доступы <code>calendar.events</code> (события всех календарей) и <code>calendar.calendarlist.readonly</code> (только список календарей и их цвета).</p>
       <details class="hint">
         <summary>Данные для Google Cloud Console</summary>
         <p>Authorized redirect URI для OAuth-клиента типа «Chrome Extension»:<br>
@@ -33,6 +34,21 @@
         </p>
         <button type="button" id="btn-copy-redirect">Скопировать redirect URI</button>
       </details>
+    </section>
+
+    <section class="card">
+      <h2>OAuth-клиент</h2>
+      <p class="hint">
+        Client ID публичный и уже указан. Client secret возьмите в Google Cloud →
+        Google Auth Platform → Clients → ваш Web-клиент. Он хранится только в этом браузере,
+        не попадает в репозиторий и не передаётся никуда, кроме Google и вашего сервера.
+      </p>
+      <label class="field">Client ID
+        <input id="oauth-client-id" autocomplete="off" placeholder="...apps.googleusercontent.com">
+      </label>
+      <label class="field">Client secret
+        <input id="oauth-client-secret" type="password" autocomplete="off" placeholder="GOCSPX-...">
+      </label>
     </section>
 
     <section class="card">

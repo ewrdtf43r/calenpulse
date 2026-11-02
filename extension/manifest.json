@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "CalPulse — Google Calendar alerts",
-  "short_name": "CalPulse",
-  "version": "0.1.0",
+  "name": "CalenPulse — Google Calendar alerts",
+  "short_name": "CalenPulse",
+  "version": "0.2.0",
   "description": "Боковая панель Google Календаря и напоминания в браузере, Telegram и Discord.",
   "minimum_chrome_version": "116",
   "permissions": [
@@ -24,7 +24,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Открыть CalPulse",
+    "default_title": "Открыть CalenPulse",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
