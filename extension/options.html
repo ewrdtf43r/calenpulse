@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalPulse — настройки</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="page-head">
+      <div class="brand">
+        <img src="icons/icon48.png" alt="" width="32" height="32">
+        <div>
+          <h1>CalPulse</h1>
+          <p class="muted">Google Календарь в боковой панели и напоминания в трёх каналах</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>Аккаунт Google</h2>
+      <p id="auth-status" class="muted">Проверяю…</p>
+      <div class="row">
+        <button id="btn-connect" class="primary">Подключить Google</button>
+        <button id="btn-disconnect" hidden>Отключить</button>
+      </div>
+      <p class="hint">Используется доступ <code>calendar.events</code>: чтение и изменение событий основного календаря.</p>
+      <details class="hint">
+        <summary>Данные для Google Cloud Console</summary>
+        <p>Authorized redirect URI для OAuth-клиента типа «Chrome Extension»:<br>
+          <code id="redirect-uri">—</code>
+        </p>
+        <button type="button" id="btn-copy-redirect">Скопировать redirect URI</button>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Напоминания в браузере</h2>
+      <label class="switch-row">
+        <input type="checkbox" id="local-notifications">
+        <span>Показывать уведомления, пока браузер запущен</span>
+      </label>
+
+      <p class="label">За сколько напоминать</p>
+      <div class="chips" id="reminder-chips">
+        <label class="chip"><input type="checkbox" value="0"><span>в момент начала</span></label>
+        <label class="chip"><input type="checkbox" value="5"><span>5 мин</span></label>
+        <label class="chip"><input type="checkbox" value="10"><span>10 мин</span></label>
+        <label class="chip"><input type="checkbox" value="15"><span>15 мин</span></label>
+        <label class="chip"><input type="checkbox" value="30"><span>30 мин</span></label>
+        <label class="chip"><input type="checkbox" value="60"><span>1 час</span></label>
+        <label class="chip"><input type="checkbox" value="120"><span>2 часа</span></label>
+        <label class="chip"><input type="checkbox" value="1440"><span>1 день</span></label>
+      </div>
+
+      <div class="row">
+        <button id="btn-test-browser">Проверить уведомление</button>
+      </div>
+      <p class="hint">Эти же интервалы сервер использует для Telegram и Discord.</p>
+    </section>
+
+    <section class="card">
+      <h2>Telegram</h2>
+      <label class="switch-row">
+        <input type="checkbox" id="tg-enabled">
+        <span>Отправлять напоминания в Telegram</span>
+      </label>
+      <label class="field">Токен бота
+        <input id="tg-token" autocomplete="off" placeholder="123456789:AA...">
+      </label>
+      <label class="field">Chat ID
+        <input id="tg-chat" autocomplete="off" placeholder="123456789">
+      </label>
+      <p class="hint">
+        Создайте бота у <a href="https://t.me/BotFather" target="_blank" rel="noreferrer">@BotFather</a>,
+        напишите ему любое сообщение и узнайте chat id у <a href="https://t.me/userinfobot" target="_blank" rel="noreferrer">@userinfobot</a>.
+      </p>
+      <div class="row">
+        <button id="btn-test-telegram">Тест Telegram</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Discord</h2>
+      <label class="switch-row">
+        <input type="checkbox" id="dc-enabled">
+        <span>Отправлять напоминания в Discord</span>
+      </label>
+      <label class="field">Webhook URL
+        <input id="dc-webhook" autocomplete="off" placeholder="https://discord.com/api/webhooks/...">
+      </label>
+      <p class="hint">Канал → «Изменить канал» → «Интеграции» → «Вебухуки» → «Новый вебхук» → скопировать URL.</p>
+      <div class="row">
+        <button id="btn-test-discord">Тест Discord</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Сервер 24/7</h2>
+      <p class="hint">
+        Сервер опрашивает календарь и отправляет Telegram/Discord, даже когда компьютер выключен.
+        События и токены идут только на ваш собственный сервер.
+      </p>
+      <label class="field">Адрес сервера
+        <input id="server-url" autocomplete="off" placeholder="https://calendar.example.com">
+      </label>
+      <label class="field">Ключ синхронизации
+        <span class="inline">
+          <input id="sync-key" autocomplete="off" placeholder="длинная случайная строка">
+          <button type="button" id="btn-gen-key">Сгенерировать</button>
+        </span>
+      </label>
+      <div class="row">
+        <button id="btn-sync" class="primary">Сохранить и синхронизировать</button>
+        <button id="btn-test-server">Тест каналов на сервере</button>
+      </div>
+      <p id="server-status" class="muted small"></p>
+    </section>
+
+    <footer class="page-foot">
+      <a href="privacy.html" target="_blank">Политика конфиденциальности</a>
+      <span class="spacer"></span>
+      <button id="btn-save" class="primary">Сохранить</button>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

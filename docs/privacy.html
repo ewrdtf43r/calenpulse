@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalPulse — политика конфиденциальности</title>
+  <style>
+    body { max-width: 760px; margin: 40px auto; padding: 0 20px; font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1b2130; }
+    h1 { font-size: 26px; margin-bottom: 4px; }
+    h2 { font-size: 18px; margin-top: 28px; }
+    .muted { color: #6a7285; }
+    code { background: #eef1f8; padding: 1px 5px; border-radius: 5px; }
+    ul { padding-left: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Политика конфиденциальности CalPulse</h1>
+  <p class="muted">Редакция от 2 ноября 2026 года</p>
+
+  <p>CalPulse — расширение для браузера, которое показывает события Google Календаря в боковой панели
+  и присылает напоминания в браузере, Telegram и Discord.</p>
+
+  <h2>Какие данные обрабатываются</h2>
+  <ul>
+    <li><strong>События Google Календаря</strong> — название, время, место и описание событий основного календаря.
+      Данные читаются через официальный Google Calendar API с доступом <code>calendar.events</code>.</li>
+    <li><strong>Токены Google OAuth</strong> — access token и refresh token, полученные после явного входа в аккаунт Google.</li>
+    <li><strong>Настройки уведомлений</strong> — интервалы напоминаний, токен Telegram-бота, chat id, Discord webhook.</li>
+  </ul>
+
+  <h2>Где хранятся данные</h2>
+  <ul>
+    <li><strong>В браузере</strong> — токены и настройки лежат в <code>chrome.storage.local</code> на вашем компьютере.</li>
+    <li><strong>На вашем сервере</strong> — если вы включили синхронизацию 24/7, refresh token и настройки каналов
+      отправляются на сервер, адрес которого вы указали сами. Сервер шифрует эти данные при хранении
+      (AES-256-GCM) и использует их только для опроса календаря и отправки напоминаний.</li>
+  </ul>
+  <p>Разработчик расширения не получает и не хранит ваши данные: у расширения нет собственного облака,
+  аналитики и телеметрии.</p>
+
+  <h2>Передача третьим сторонам</h2>
+  <ul>
+    <li><strong>Google</strong> — чтение и изменение событий через Google Calendar API.</li>
+    <li><strong>Telegram</strong> — отправка текста напоминания через Bot API, если канал включён.</li>
+    <li><strong>Discord</strong> — отправка текста напоминания через webhook, если канал включён.</li>
+  </ul>
+  <p>Данные не продаются, не используются для рекламы и не передаются никому, кроме перечисленных сервисов.</p>
+
+  <h2>Удаление данных</h2>
+  <p>Кнопка «Отключить» на странице настроек удаляет токены из браузера. Чтобы удалить данные с сервера,
+  используйте команду <code>DELETE /api/account</code> с вашим ключом синхронизации или удалите запись на сервере.</p>
+
+  <h2>Разрешения расширения</h2>
+  <ul>
+    <li><code>identity</code> — вход через Google OAuth.</li>
+    <li><code>storage</code> — хранение токенов и настроек локально.</li>
+    <li><code>alarms</code>, <code>notifications</code> — напоминания в браузере.</li>
+    <li><code>sidePanel</code> — интерфейс в боковой панели.</li>
+    <li>Доступ к адресу вашего сервера запрашивается отдельно, только когда вы включаете синхронизацию 24/7.</li>
+  </ul>
+
+  <h2>Контакты</h2>
+  <p>Вопросы: <a href="mailto:support@example.com">support@example.com</a></p>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalPulse</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icons/icon32.png" alt="" width="20" height="20">
+      <span class="brand-name">CalPulse</span>
+      <span id="account" class="account"></span>
+    </div>
+    <div class="top-actions">
+      <button id="refresh" class="icon-btn" title="Обновить">&#8635;</button>
+      <button id="settings" class="icon-btn" title="Настройки">&#9881;</button>
+    </div>
+  </header>
+
+  <main id="main">
+    <div id="connect-state" class="state-card" hidden>
+      <h2>Подключите Google Календарь</h2>
+      <p>События будут в боковой панели, а напоминания — в браузере, Telegram и Discord.</p>
+      <button id="connect" class="primary">Подключить Google</button>
+    </div>
+
+    <div id="loading" class="state-card muted" hidden>Загрузка событий…</div>
+
+    <div id="error-state" class="state-card error" hidden>
+      <p id="error-text"></p>
+      <button id="retry">Повторить</button>
+    </div>
+
+    <div id="next-card" class="next-card" hidden>
+      <div class="next-label">Далее</div>
+      <div id="next-title" class="next-title"></div>
+      <div id="next-meta" class="next-meta"></div>
+    </div>
+
+    <div id="events"></div>
+
+    <div id="empty" class="state-card empty" hidden>
+      <p>На ближайшие две недели событий нет.</p>
+      <p class="muted">Создайте первое — оно сразу появится в Google Календаре.</p>
+    </div>
+  </main>
+
+  <footer class="bottombar">
+    <button id="new-event" class="primary wide">+ Новое событие</button>
+  </footer>
+
+  <dialog id="editor">
+    <form id="event-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="editor-title">Новое событие</h2>
+        <button type="button" id="editor-close" class="icon-btn" title="Закрыть">&#10005;</button>
+      </div>
+
+      <label class="field">Название
+        <input id="f-summary" required maxlength="200" autocomplete="off" placeholder="Например, созвон с командой">
+      </label>
+
+      <div class="field-row">
+        <label class="field">Дата
+          <input id="f-date" type="date" required>
+        </label>
+        <label class="field">С
+          <input id="f-start" type="time" required>
+        </label>
+        <label class="field">До
+          <input id="f-end" type="time" required>
+        </label>
+      </div>
+
+      <label class="field">Место
+        <input id="f-location" maxlength="200" autocomplete="off" placeholder="Ссылка или адрес">
+      </label>
+
+      <label class="field">Описание
+        <textarea id="f-description" rows="3" maxlength="2000"></textarea>
+      </label>
+
+      <p id="form-error" class="form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" id="editor-delete" class="danger" hidden>Удалить</button>
+        <span class="spacer"></span>
+        <button type="button" id="editor-cancel">Отмена</button>
+        <button type="submit" id="editor-save" class="primary">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
