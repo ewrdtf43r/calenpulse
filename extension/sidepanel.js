@@ -1,6 +1,12 @@
 const $ = (selector) => document.querySelector(selector);
 
-const state = { events: [], editing: null, settings: null };
+const state = {
+  events: [],
+  calendars: [],
+  hiddenCalendars: new Set(),
+  editing: null,
+  settings: null,
+};
 
 function send(type, data) {
   return new Promise((resolve, reject) => {
@@ -88,9 +94,72 @@ function showConnect(message) {
   showState('connect-state');
 }
 
+function renderFilters() {
+  const bar = $('#filter-bar');
+  const calendars = state.calendars;
+  if (calendars.length < 2) {
+    bar.hidden = true;
+    bar.replaceChildren();
+    return;
+  }
+  bar.hidden = false;
+  const scrollLeft = bar.scrollLeft;
+  bar.replaceChildren();
+  bar.scrollLeft = scrollLeft;
+
+  const anyHidden = calendars.some((cal) => state.hiddenCalendars.has(cal.id));
+  const all = document.createElement('button');
+  all.type = 'button';
+  all.className = `filter-chip all${anyHidden ? '' : ' active'}`;
+  all.textContent = 'Все';
+  all.addEventListener('click', () => {
+    state.hiddenCalendars.clear();
+    persistFilters();
+    renderFilters();
+    renderEvents();
+  });
+  bar.append(all);
+
+  for (const cal of calendars) {
+    const visible = !state.hiddenCalendars.has(cal.id);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = `filter-chip${visible ? ' active' : ''}`;
+    chip.title = visible ? `Скрыть «${cal.summary}»` : `Показать «${cal.summary}»`;
+    chip.setAttribute('aria-pressed', String(visible));
+
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = cal.color;
+
+    const label = document.createElement('span');
+    label.textContent = cal.summary;
+
+    chip.append(dot, label);
+    chip.addEventListener('click', () => {
+      if (state.hiddenCalendars.has(cal.id)) state.hiddenCalendars.delete(cal.id);
+      else state.hiddenCalendars.add(cal.id);
+      persistFilters();
+      renderFilters();
+      renderEvents();
+    });
+    bar.append(chip);
+  }
+}
+
+let filterSaveTimer;
+function persistFilters() {
+  state.settings.hiddenCalendars = [...state.hiddenCalendars];
+  clearTimeout(filterSaveTimer);
+  filterSaveTimer = setTimeout(() => {
+    send('settings:save', { hiddenCalendars: [...state.hiddenCalendars] }).catch(() => {});
+  }, 250);
+}
+
 function renderEvents() {
   const now = Date.now();
-  const visible = state.events
+  const filtered = state.events.filter((event) => !state.hiddenCalendars.has(event.calendarId));
+  const visible = filtered
     .filter((event) => endDate(event).getTime() > now - 300_000)
     .sort((a, b) => startDate(a) - startDate(b));
 
@@ -115,6 +184,13 @@ function renderEvents() {
   container.replaceChildren();
 
   if (!visible.length) {
+    const filteredOut = state.events.length > 0;
+    $('#empty-title').textContent = filteredOut
+      ? 'Все календари скрыты фильтром'
+      : 'На ближайшие две недели событий нет.';
+    $('#empty-text').textContent = filteredOut
+      ? 'Нажмите «Все» или включите нужный календарь в фильтре выше.'
+      : 'Создайте первое — оно сразу появится в Google Календаре.';
     showState('empty');
     return;
   }
@@ -193,10 +269,16 @@ async function loadEvents() {
   showState('loading');
   try {
     const now = Date.now();
-    state.events = await send('events:list', {
-      timeMin: new Date(now - 3_600_000).toISOString(),
-      timeMax: new Date(now + 14 * 86_400_000).toISOString(),
-    });
+    const [calendars, events] = await Promise.all([
+      send('calendars:list'),
+      send('events:list', {
+        timeMin: new Date(now - 3_600_000).toISOString(),
+        timeMax: new Date(now + 14 * 86_400_000).toISOString(),
+      }),
+    ]);
+    state.calendars = calendars.filter((cal) => cal.selected && cal.accessRole !== 'freeBusyReader');
+    state.events = events;
+    renderFilters();
     renderEvents();
   } catch (e) {
     if (/не подключён|refresh token|credential/i.test(e.message)) {
@@ -350,6 +432,7 @@ async function connect() {
     $('#account').textContent = result.label || '';
     if (result.syncError) toast(`Google подключён, но сервер: ${result.syncError}`);
     state.settings = await send('settings:get');
+    state.hiddenCalendars = new Set(state.settings.hiddenCalendars || []);
     await loadEvents();
   } catch (err) {
     const message = /only one web auth flow/i.test(err.message)
@@ -386,6 +469,7 @@ async function init() {
   });
 
   state.settings = await send('settings:get');
+  state.hiddenCalendars = new Set(state.settings.hiddenCalendars || []);
   const status = await send('auth:status');
   if (!status.connected) {
     showConnect();

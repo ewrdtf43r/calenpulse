@@ -122,6 +122,49 @@ main {
   scrollbar-width: thin;
 }
 
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  margin-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.filter-bar::-webkit-scrollbar { display: none; }
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.filter-chip:hover { background: var(--bg-hover); }
+
+.filter-chip.active {
+  color: var(--text);
+  border-color: rgba(124, 140, 255, 0.45);
+  background: rgba(124, 140, 255, 0.12);
+}
+
+.filter-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--chip-color, var(--accent));
+}
+
+.filter-chip.all .dot { display: none; }
+
 .state-card {
   background: var(--bg-elev);
   border: 1px solid var(--line);
@@ -142,8 +185,8 @@ main {
   position: relative;
   padding: 16px;
   margin-bottom: 16px;
-  border-radius: var(--radius);
   border: 1px solid transparent;
+  border-radius: var(--radius);
   background:
     linear-gradient(var(--bg-elev), var(--bg-elev)) padding-box,
     linear-gradient(135deg, var(--accent-2), var(--accent)) border-box;

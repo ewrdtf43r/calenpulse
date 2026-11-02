@@ -167,13 +167,18 @@ const handlers = {
   'server:status': () => getServerStatus(),
   'server:test': ({ channels }) => sendServerTest(channels),
   'notify:test': async () => {
-    await chrome.notifications.create('test', {
+    const id = `calenpulse-test-${Date.now()}`;
+    await chrome.notifications.create(id, {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
       title: 'CalenPulse',
       message: 'Уведомления в браузере работают.',
+      priority: 2,
+      requireInteraction: true,
+      silent: false,
     });
-    return { ok: true };
+    const all = await chrome.notifications.getAll();
+    return { id, listed: Boolean(all[id]) };
   },
 };
 

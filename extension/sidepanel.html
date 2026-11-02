@@ -20,6 +20,8 @@
   </header>
 
   <main id="main">
+    <div id="filter-bar" class="filter-bar" hidden></div>
+
     <div id="connect-state" class="state-card" hidden>
       <h2>Подключите Google Календарь</h2>
       <p id="connect-text">События будут в боковой панели, а напоминания — в браузере, Telegram и Discord.</p>
@@ -42,8 +44,8 @@
     <div id="events"></div>
 
     <div id="empty" class="state-card empty" hidden>
-      <p>На ближайшие две недели событий нет.</p>
-      <p class="muted">Создайте первое — оно сразу появится в Google Календаре.</p>
+      <p id="empty-title">На ближайшие две недели событий нет.</p>
+      <p id="empty-text" class="muted">Создайте первое — оно сразу появится в Google Календаре.</p>
     </div>
   </main>
 

@@ -253,8 +253,12 @@ async function init() {
   $('#btn-test-browser').addEventListener('click', (e) =>
     withBusy(e.currentTarget, async () => {
       await save({ quiet: true });
-      await send('notify:test');
-      toast('Уведомление отправлено в браузер');
+      const result = await send('notify:test');
+      toast(
+        result.listed
+          ? 'Уведомление создано. Если баннера нет — проверьте Windows и центр уведомлений (Win+A)'
+          : 'Windows не принял уведомление — проверьте настройки уведомлений Edge'
+      );
     })
   );
 
