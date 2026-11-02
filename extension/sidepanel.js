@@ -354,7 +354,9 @@ async function connect() {
   } catch (err) {
     const message = /only one web auth flow/i.test(err.message)
       ? 'Окно входа Google уже открыто. Закройте его и нажмите «Подключить Google» снова.'
-      : err.message;
+      : /client_secret is missing/i.test(err.message)
+        ? 'Client secret не сохранён. Откройте настройки → OAuth-клиент, вставьте секрет, нажмите «Сохранить» и повторите вход.'
+        : err.message;
     showError(message);
   } finally {
     button.disabled = false;

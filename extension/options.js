@@ -210,6 +210,12 @@ async function init() {
     toast('Redirect URI скопирован');
   });
 
+  for (const id of ['#oauth-client-id', '#oauth-client-secret']) {
+    $(id).addEventListener('change', () => {
+      save({ quiet: true }).catch(() => {});
+    });
+  }
+
   state.settings = await send('settings:get');
   if (!state.settings.syncKey) state.settings.syncKey = randomKey();
   state.auth = await send('auth:status');
@@ -218,6 +224,7 @@ async function init() {
 
   $('#btn-connect').addEventListener('click', (e) =>
     withBusy(e.currentTarget, async () => {
+      await save({ quiet: true });
       const result = await send('auth:connect');
       state.auth = await send('auth:status');
       paintAuth();
@@ -235,6 +242,7 @@ async function init() {
 
   $('#btn-reconnect').addEventListener('click', (e) =>
     withBusy(e.currentTarget, async () => {
+      await save({ quiet: true });
       await send('auth:connect');
       state.auth = await send('auth:status');
       paintAuth();
