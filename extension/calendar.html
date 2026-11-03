@@ -58,15 +58,20 @@
 
       <div class="field-row">
         <label class="field">Дата
-          <input id="f-date" type="date" required>
+          <span class="date-field">
+            <input id="f-date" type="text" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="06.11.2026">
+            <button type="button" id="f-date-open" class="date-open" title="Выбрать дату из календаря">&#9638;</button>
+          </span>
         </label>
         <label class="field">С
-          <input id="f-start" type="time" required>
+          <input id="f-start" type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="07:00">
         </label>
         <label class="field">До
-          <input id="f-end" type="time" required>
+          <input id="f-end" type="text" inputmode="numeric" autocomplete="off" maxlength="5" placeholder="08:00">
         </label>
       </div>
+
+      <p id="form-preview" class="form-preview" hidden></p>
 
       <label class="field">Место
         <input id="f-location" maxlength="200" autocomplete="off" placeholder="Ссылка или адрес">
@@ -85,6 +90,19 @@
         <button type="submit" id="editor-save" class="primary">Сохранить</button>
       </div>
     </form>
+
+    <div id="date-pop" class="date-pop" hidden>
+      <div class="dp-head">
+        <button type="button" id="dp-prev" class="icon-btn" title="Предыдущий месяц">&#8249;</button>
+        <span id="dp-title" class="dp-title"></span>
+        <button type="button" id="dp-next" class="icon-btn" title="Следующий месяц">&#8250;</button>
+      </div>
+      <div class="dp-weeks">
+        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+      </div>
+      <div id="dp-grid" class="dp-grid"></div>
+      <button type="button" id="dp-today" class="dp-today">Сегодня</button>
+    </div>
   </dialog>
 
   <div id="event-popover" class="popover" hidden>

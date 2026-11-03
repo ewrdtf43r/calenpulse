@@ -333,6 +333,103 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
 .field-row .field { flex: 1; }
 .field-row .field:first-child { flex: 1.4; }
 
+#f-start, #f-end {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.6px;
+}
+
+.form-preview {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Выбор даты: поле показывает дд.мм.гггг, по клику открывается сетка месяца */
+
+.date-field { position: relative; display: flex; }
+
+.date-field input { padding-right: 34px; font-variant-numeric: tabular-nums; }
+
+.date-open {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1;
+  padding: 4px 6px;
+}
+
+.date-open:hover { color: var(--text); background: var(--bg-hover); }
+
+.date-pop {
+  position: fixed;
+  z-index: 5;
+  width: 252px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow);
+}
+
+.dp-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.dp-title { font-size: 13px; font-weight: 650; }
+
+.dp-weeks,
+.dp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dp-weeks {
+  margin-bottom: 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.dp-day {
+  padding: 0;
+  height: 28px;
+  border-color: transparent;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.dp-day:hover { background: var(--bg-hover); }
+.dp-day.other { color: var(--muted); opacity: 0.55; }
+
+.dp-day.today {
+  color: var(--accent);
+  font-weight: 700;
+  border: 1px solid rgba(124, 140, 255, 0.45);
+}
+
+.dp-day.selected {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 700;
+}
+
+.dp-today {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px;
+  font-size: 12px;
+}
+
 .form-error { color: var(--danger); font-size: 12px; margin: 0 0 10px; }
 
 .dialog-actions {

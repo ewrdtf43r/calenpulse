@@ -1,4 +1,5 @@
 import { createEventEditor } from './lib/event-editor.js';
+import { canWrite, isVisible } from './lib/calendar.js';
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -282,10 +283,8 @@ async function loadEvents() {
       }),
       send('colors:get').catch(() => ({ event: {} })),
     ]);
-    state.calendars = calendars.filter((cal) => cal.selected && cal.accessRole !== 'freeBusyReader');
-    state.writableCalendars = calendars.filter(
-      (cal) => cal.accessRole === 'owner' || cal.accessRole === 'writer'
-    );
+    state.calendars = calendars.filter((cal) => cal.selected && isVisible(cal.accessRole));
+    state.writableCalendars = calendars.filter((cal) => canWrite(cal.accessRole));
     state.events = events;
     state.colors = colors || { event: {} };
     renderFilters();

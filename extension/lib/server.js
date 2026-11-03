@@ -1,6 +1,6 @@
 import { getSettings, saveSettings, getAuth } from './store.js';
 import { getOAuthConfig } from './auth.js';
-import { listCalendars } from './calendar.js';
+import { listCalendars, isVisible } from './calendar.js';
 
 export function normalizeServerUrl(raw) {
   const value = (raw || '').trim().replace(/\/+$/, '');
@@ -41,7 +41,7 @@ export async function pushConfig() {
   try {
     const all = await listCalendars();
     calendars = all
-      .filter((cal) => cal.selected && cal.accessRole !== 'freeBusyReader')
+      .filter((cal) => cal.selected && isVisible(cal.accessRole))
       .map((cal) => ({ id: cal.id, summary: cal.summary, primary: cal.primary }));
   } catch {
     // сервер продолжит использовать ранее сохранённый список календарей

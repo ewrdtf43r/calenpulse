@@ -85,8 +85,21 @@ export async function listCalendars() {
       color: cal.backgroundColor || '#7c8cff',
       selected: cal.selected !== false,
       primary: Boolean(cal.primary),
-      accessRole: cal.accessRole || 'reader',
+      // Роль может прийти в другом регистре или не прийти вовсе — не превращаем
+      // отсутствие роли в «только чтение», иначе свои календари становятся недоступными.
+      accessRole: String(cal.accessRole || '').toLowerCase(),
     }));
+}
+
+export function canWrite(accessRole) {
+  const role = String(accessRole || '').toLowerCase();
+  return role !== 'reader' && role !== 'freebusyreader';
+}
+
+// Видимые календари: всё, кроме «только занятость» — напоминания приходят и из
+// календарей только для чтения (праздники, подписки).
+export function isVisible(accessRole) {
+  return String(accessRole || '').toLowerCase() !== 'freebusyreader';
 }
 
 export async function listEvents({ timeMin, timeMax, calendarId = 'primary' }) {

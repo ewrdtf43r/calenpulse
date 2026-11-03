@@ -1,4 +1,5 @@
 import { createEventEditor } from './lib/event-editor.js';
+import { canWrite, isVisible } from './lib/calendar.js';
 
 const $ = (selector) => document.querySelector(selector);
 const DAY_MS = 86_400_000;
@@ -212,7 +213,7 @@ function openPopover(event, anchor) {
   notes.hidden = !description;
   notes.textContent = description;
 
-  const writable = event.accessRole === 'owner' || event.accessRole === 'writer';
+  const writable = canWrite(event.accessRole);
   $('#popover-title').disabled = !writable;
   $('#popover-title').title = writable ? 'Нажмите, чтобы переименовать' : 'Календарь только для чтения';
   $('#popover-edit').hidden = !writable || event.allDay;
@@ -565,10 +566,8 @@ async function load() {
       }),
       send('colors:get').catch(() => ({ event: {} })),
     ]);
-    state.calendars = calendars.filter((cal) => cal.selected && cal.accessRole !== 'freeBusyReader');
-    state.writableCalendars = calendars.filter(
-      (cal) => cal.accessRole === 'owner' || cal.accessRole === 'writer'
-    );
+    state.calendars = calendars.filter((cal) => cal.selected && isVisible(cal.accessRole));
+    state.writableCalendars = calendars.filter((cal) => canWrite(cal.accessRole));
     state.events = events;
     state.colors = colors || { event: {} };
     renderFilters();

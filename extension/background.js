@@ -31,9 +31,8 @@ function leadLabel(minutes) {
 
 async function listAllEvents({ timeMin, timeMax } = {}) {
   const calendars = await calendar.listCalendars();
-  const wanted = calendars.filter(
-    (cal) => cal.selected && cal.accessRole !== 'freeBusyReader'
-  );
+  // Напоминания шлём со всех видимых календарей, включая «только чтение» (праздники и т.п.).
+  const wanted = calendars.filter((cal) => cal.selected && calendar.isVisible(cal.accessRole));
 
   const results = await Promise.all(
     wanted.map(async (cal) => {
