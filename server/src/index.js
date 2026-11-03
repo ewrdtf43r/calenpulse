@@ -12,11 +12,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = path.resolve(root, process.env.DATA_DIR || 'data');
 const port = Number(process.env.PORT || 8787);
 const pollIntervalMs = Number(process.env.POLL_INTERVAL_MS || 30_000);
+const accountTtlDays = Number(process.env.ACCOUNT_TTL_DAYS || 30);
 const allowHttp = process.env.ALLOW_HTTP === '1';
 
 const store = createStore(path.join(dataDir, 'accounts.json'));
 const vault = createVault(dataDir);
-const poller = startPoller({ store, vault, intervalMs: pollIntervalMs });
+const poller = startPoller({ store, vault, intervalMs: pollIntervalMs, ttlDays: accountTtlDays });
 
 const app = express();
 app.disable('x-powered-by');
@@ -102,6 +103,26 @@ function isDiscordWebhook(raw) {
   }
 }
 
+const DEFAULT_CALENDARS = [{ id: 'primary', summary: 'Основной', primary: true }];
+
+function normalizeCalendars(input, fallback) {
+  if (!Array.isArray(input) || !input.length) return fallback || DEFAULT_CALENDARS;
+  const seen = new Set();
+  const calendars = [];
+  for (const raw of input.slice(0, 30)) {
+    const id = clean(raw?.id, 300);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    calendars.push({
+      id,
+      summary: clean(raw?.summary, 120) || 'Календарь',
+      primary: Boolean(raw?.primary),
+    });
+  }
+  calendars.sort((a, b) => Number(b.primary) - Number(a.primary));
+  return calendars.length ? calendars : fallback || DEFAULT_CALENDARS;
+}
+
 function buildConfig(body, previous = {}) {
   const refreshToken = clean(body.refreshToken, 500) || previous.refreshToken || '';
   const clientId = clean(body.clientId, 200) || previous.clientId || '';
@@ -141,8 +162,10 @@ function buildConfig(body, previous = {}) {
     clientId,
     clientSecret,
     label: clean(body.label, 120) || previous.label || 'Google Календарь',
+    email: clean(body.email, 320).toLowerCase() || previous.email || '',
     timezone,
     reminders: normalizeReminders(body.reminders, previous.reminders || [60, 10]),
+    calendars: normalizeCalendars(body.calendars, previous.calendars),
     channels: { telegram, discord },
   };
 }
@@ -160,8 +183,13 @@ function handle(fn) {
 function publicStatus(record, cfg) {
   return {
     label: cfg.label,
+    email: cfg.email || '',
     timezone: cfg.timezone,
     reminders: cfg.reminders,
+    calendars: (cfg.calendars || DEFAULT_CALENDARS).map((cal) => ({
+      id: cal.id,
+      summary: cal.summary,
+    })),
     channels: {
       telegram: {
         enabled: cfg.channels.telegram.enabled,
@@ -292,7 +320,10 @@ app.use((err, _req, res, _next) => {
 });
 
 const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`CalenPulse server on :${port} (poll every ${pollIntervalMs} ms, https required: ${!allowHttp})`);
+  console.log(
+    `CalenPulse server on :${port} (poll every ${pollIntervalMs} ms, https required: ${!allowHttp}, ` +
+      `аккаунты без синхронизации ${accountTtlDays > 0 ? `${accountTtlDays} дн удаляются` : 'не удаляются'})`
+  );
 });
 
 function shutdown(signal) {

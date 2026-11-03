@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CalenPulse — Календарь</title>
+  <link rel="stylesheet" href="calendar.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="icons/icon32.png" alt="" width="22" height="22">
+      <span class="brand-name">CalenPulse</span>
+    </div>
+
+    <div class="nav">
+      <button id="prev" class="icon-btn" title="Назад">&#8249;</button>
+      <button id="today">Сегодня</button>
+      <button id="next" class="icon-btn" title="Вперёд">&#8250;</button>
+      <span id="range" class="range"></span>
+    </div>
+
+    <div id="views" class="views" role="group" aria-label="Вид календаря">
+      <button type="button" data-view="2weeks">2 недели</button>
+      <button type="button" data-view="week">Неделя</button>
+      <button type="button" data-view="month">Месяц</button>
+    </div>
+
+    <div class="top-actions">
+      <button id="refresh" class="icon-btn" title="Обновить">&#8635;</button>
+    </div>
+  </header>
+
+  <div id="filter-bar" class="filter-bar" hidden></div>
+
+  <main id="main">
+    <div id="error-state" class="state error" hidden>
+      <p id="error-text"></p>
+      <button id="retry">Повторить</button>
+    </div>
+    <div id="grid" class="grid" hidden></div>
+  </main>
+
+  <dialog id="editor">
+    <form id="event-form" novalidate>
+      <div class="dialog-head">
+        <h2 id="editor-title">Новое событие</h2>
+        <button type="button" id="editor-close" class="icon-btn" title="Закрыть">&#10005;</button>
+      </div>
+
+      <label class="field">Календарь
+        <select id="f-calendar"></select>
+      </label>
+
+      <label class="field">Название
+        <input id="f-summary" required maxlength="200" autocomplete="off" placeholder="Например, созвон с командой">
+      </label>
+
+      <div class="field-row">
+        <label class="field">Дата
+          <input id="f-date" type="date" required>
+        </label>
+        <label class="field">С
+          <input id="f-start" type="time" required>
+        </label>
+        <label class="field">До
+          <input id="f-end" type="time" required>
+        </label>
+      </div>
+
+      <label class="field">Место
+        <input id="f-location" maxlength="200" autocomplete="off" placeholder="Ссылка или адрес">
+      </label>
+
+      <label class="field">Описание
+        <textarea id="f-description" rows="3" maxlength="2000"></textarea>
+      </label>
+
+      <p id="form-error" class="form-error" hidden></p>
+
+      <div class="dialog-actions">
+        <button type="button" id="editor-delete" class="danger" hidden>Удалить</button>
+        <span class="spacer"></span>
+        <button type="button" id="editor-cancel">Отмена</button>
+        <button type="submit" id="editor-save" class="primary">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="event-popover" class="popover" hidden>
+    <div class="popover-body">
+      <div class="popover-head">
+        <button type="button" id="popover-title" class="popover-title" title="Нажмите, чтобы переименовать"></button>
+        <input id="popover-input" class="popover-input" maxlength="200" hidden>
+        <button type="button" id="popover-close" class="icon-btn" title="Закрыть">&#10005;</button>
+      </div>
+      <p id="popover-when" class="popover-line"></p>
+      <p id="popover-calendar" class="popover-line" hidden></p>
+      <p id="popover-where" class="popover-line" hidden></p>
+      <p id="popover-notes" class="popover-notes" hidden></p>
+      <div class="popover-actions">
+        <button type="button" id="popover-edit">Изменить</button>
+        <button type="button" id="popover-delete" class="danger">Удалить</button>
+        <button type="button" id="popover-google">Открыть в Google</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="calendar.js"></script>
+</body>
+</html>

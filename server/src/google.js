@@ -24,19 +24,22 @@ export async function fetchAccessToken({ refreshToken, clientId, clientSecret })
   return { accessToken: data.access_token, expiresIn: data.expires_in || 3600 };
 }
 
-export async function listUpcoming({ accessToken, timeMin, timeMax }) {
+export async function listUpcoming({ accessToken, calendarId = 'primary', timeMin, timeMax }) {
   const params = new URLSearchParams({
     singleEvents: 'true',
     orderBy: 'startTime',
     maxResults: '250',
     timeMin,
     timeMax,
-    fields: 'items(id,summary,status,start,end,location,htmlLink,transparency,attendees(self,responseStatus))',
+    fields: 'items(id,iCalUID,summary,status,start,end,location,htmlLink,transparency,attendees(self,responseStatus))',
   });
-  const res = await fetch(`${CALENDAR_BASE}/calendars/primary/events?${params}`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    signal: AbortSignal.timeout(20_000),
-  });
+  const res = await fetch(
+    `${CALENDAR_BASE}/calendars/${encodeURIComponent(calendarId)}/events?${params}`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(20_000),
+    }
+  );
   if (res.status === 401) {
     const error = new Error('Access token истёк');
     error.code = 'unauthorized';

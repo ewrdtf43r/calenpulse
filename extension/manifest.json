@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "CalenPulse — Google Calendar alerts",
   "short_name": "CalenPulse",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Боковая панель Google Календаря и напоминания в браузере, Telegram и Discord.",
   "minimum_chrome_version": "116",
   "permissions": [

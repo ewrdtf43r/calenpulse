@@ -1,5 +1,6 @@
 import { getSettings, saveSettings, getAuth } from './store.js';
 import { getOAuthConfig } from './auth.js';
+import { listCalendars } from './calendar.js';
 
 export function normalizeServerUrl(raw) {
   const value = (raw || '').trim().replace(/\/+$/, '');
@@ -36,6 +37,16 @@ export async function pushConfig() {
   if (!auth?.refreshToken) throw new Error('Нет refresh token — переподключите Google');
   if (!oauth.clientId) throw new Error('Не задан OAuth Client ID — заполните в настройках');
 
+  let calendars = [];
+  try {
+    const all = await listCalendars();
+    calendars = all
+      .filter((cal) => cal.selected && cal.accessRole !== 'freeBusyReader')
+      .map((cal) => ({ id: cal.id, summary: cal.summary, primary: cal.primary }));
+  } catch {
+    // сервер продолжит использовать ранее сохранённый список календарей
+  }
+
   try {
     const data = await api('/api/account', {
       method: 'PUT',
@@ -44,8 +55,10 @@ export async function pushConfig() {
         clientId: oauth.clientId,
         clientSecret: oauth.clientSecret,
         label: auth.label || '',
+        email: auth.email || '',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         reminders: settings.reminders,
+        calendars,
         channels: {
           telegram: settings.telegram,
           discord: settings.discord,
@@ -62,6 +75,10 @@ export async function pushConfig() {
 
 export async function getServerStatus() {
   return api('/api/account');
+}
+
+export async function deleteAccount() {
+  return api('/api/account', { method: 'DELETE' });
 }
 
 export async function sendServerTest(channels) {

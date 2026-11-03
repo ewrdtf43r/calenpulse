@@ -37,11 +37,38 @@ function normalize(item, calendarId) {
     summary: item.summary || '(без названия)',
     description: item.description || '',
     location: item.location || '',
+    colorId: item.colorId || '',
     allDay: Boolean(item.start?.date),
     start: item.start?.dateTime || item.start?.date,
     end: item.end?.dateTime || item.end?.date,
     htmlLink: item.htmlLink || '',
   };
+}
+
+let colorsPromise = null;
+
+export async function getColors() {
+  if (!colorsPromise) {
+    colorsPromise = (async () => {
+      const cached = await chrome.storage.local.get('colorsCache');
+      const cache = cached.colorsCache;
+      if (cache && Date.now() - cache.at < 7 * 86_400_000) return cache;
+      try {
+        const data = await request('/colors');
+        const fresh = {
+          at: Date.now(),
+          event: data.event || {},
+          calendar: data.calendar || {},
+        };
+        await chrome.storage.local.set({ colorsCache: fresh });
+        return fresh;
+      } catch {
+        colorsPromise = null;
+        return { at: 0, event: {}, calendar: {} };
+      }
+    })();
+  }
+  return colorsPromise;
 }
 
 export async function listCalendars() {
@@ -69,7 +96,7 @@ export async function listEvents({ timeMin, timeMax, calendarId = 'primary' }) {
     maxResults: '250',
     timeMin,
     timeMax,
-    fields: 'items(id,iCalUID,summary,description,location,status,start,end,htmlLink,attendees(self,responseStatus))',
+    fields: 'items(id,iCalUID,summary,description,location,colorId,status,start,end,htmlLink,attendees(self,responseStatus))',
   });
   const data = await request(`/calendars/${encodeURIComponent(calendarId)}/events?${params}`);
   return (data.items || [])
@@ -78,15 +105,15 @@ export async function listEvents({ timeMin, timeMax, calendarId = 'primary' }) {
     .map((item) => normalize(item, calendarId));
 }
 
-function toEventBody({ summary, description, location, startISO, endISO, reminders }) {
+function toEventBody({ summary, description, location, startISO, endISO, reminders, allDay }) {
   const body = {
     summary,
     description: description || '',
     location: location || '',
-    start: { dateTime: startISO },
-    end: { dateTime: endISO },
+    start: allDay ? { date: startISO } : { dateTime: startISO },
+    end: allDay ? { date: endISO } : { dateTime: endISO },
   };
-  if (Array.isArray(reminders) && reminders.length) {
+  if (!allDay && Array.isArray(reminders) && reminders.length) {
     body.reminders = {
       useDefault: false,
       overrides: reminders.map((minutes) => ({ method: 'popup', minutes })),

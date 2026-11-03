@@ -118,6 +118,9 @@ button:disabled { opacity: 0.55; cursor: default; }
 .inline input { flex: 1; }
 .inline button { white-space: nowrap; }
 
+.danger { color: var(--danger); }
+.danger:hover { background: rgba(255, 107, 107, 0.12); }
+
 .switch-row {
   display: flex;
   align-items: center;

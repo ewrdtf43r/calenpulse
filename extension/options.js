@@ -34,7 +34,7 @@ function randomKey() {
 function paintAuth() {
   const auth = state.auth;
   if (auth?.connected) {
-    $('#auth-status').textContent = `Подключено: ${auth.label}`;
+    $('#auth-status').textContent = `Подключено: ${auth.email || auth.label}`;
     $('#btn-connect').hidden = true;
     $('#btn-disconnect').hidden = false;
     $('#btn-reconnect').hidden = false;
@@ -217,7 +217,12 @@ async function init() {
   }
 
   state.settings = await send('settings:get');
-  if (!state.settings.syncKey) state.settings.syncKey = randomKey();
+  if (!state.settings.syncKey) {
+    state.settings.syncKey = randomKey();
+    // Ключ = идентификатор аккаунта на сервере: сохраняем сразу, иначе следующая
+    // вкладка настроек сгенерирует другой и создаст вторую запись с тем же Google.
+    await send('settings:save', { syncKey: state.settings.syncKey });
+  }
   state.auth = await send('auth:status');
   paint();
   paintAuth();
@@ -232,13 +237,27 @@ async function init() {
     })
   );
 
-  $('#btn-disconnect').addEventListener('click', async () => {
-    if (!confirm('Отключить Google Календарь? Напоминания в Telegram и Discord тоже перестанут приходить.')) return;
-    await send('auth:disconnect');
-    state.auth = await send('auth:status');
-    paintAuth();
-    toast('Google Календарь отключён');
-  });
+  $('#btn-disconnect').addEventListener('click', (e) =>
+    withBusy(e.currentTarget, async () => {
+      if (!confirm('Отключить Google Календарь? Токены и настройки каналов удалятся и из браузера, и с сервера.')) return;
+      const result = await send('auth:disconnect');
+      state.auth = await send('auth:status');
+      paintAuth();
+      if (result.serverError) toast(`Google отключён, но с сервера удалить не вышло: ${result.serverError}`, true);
+      else toast(result.serverDeleted ? 'Google отключён, данные удалены с сервера' : 'Google Календарь отключён');
+    })
+  );
+
+  $('#btn-wipe-server').addEventListener('click', (e) =>
+    withBusy(e.currentTarget, async () => {
+      if (!confirm('Удалить аккаунт с сервера? Напоминания в Telegram и Discord прекратятся сразу, Google-подключение в браузере останется.')) return;
+      await send('server:delete');
+      state.settings.lastSyncAt = 0;
+      state.settings.lastSyncError = '';
+      $('#server-status').textContent = 'Аккаунт удалён с сервера. «Сохранить и синхронизировать» создаст его заново.';
+      toast('Данные удалены с сервера');
+    })
+  );
 
   $('#btn-reconnect').addEventListener('click', (e) =>
     withBusy(e.currentTarget, async () => {
@@ -262,8 +281,12 @@ async function init() {
     })
   );
 
-  $('#btn-gen-key').addEventListener('click', () => {
-    $('#sync-key').value = randomKey();
+  $('#btn-gen-key').addEventListener('click', async () => {
+    const key = randomKey();
+    $('#sync-key').value = key;
+    state.settings.syncKey = key;
+    await send('settings:save', { syncKey: key });
+    toast('Ключ сохранён. Старая запись на сервере станет сиротой и удалится сама по TTL');
   });
 
   $('#btn-save').addEventListener('click', (e) =>

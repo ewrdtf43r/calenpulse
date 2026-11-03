@@ -14,6 +14,7 @@
       <span id="account" class="account"></span>
     </div>
     <div class="top-actions">
+      <button id="open-grid" class="icon-btn" title="Сетка календаря">&#9638;</button>
       <button id="refresh" class="icon-btn" title="Обновить">&#8635;</button>
       <button id="settings" class="icon-btn" title="Настройки">&#9881;</button>
     </div>
@@ -60,7 +61,9 @@
         <button type="button" id="editor-close" class="icon-btn" title="Закрыть">&#10005;</button>
       </div>
 
-      <div id="editor-calendar" class="editor-calendar" hidden></div>
+      <label class="field">Календарь
+        <select id="f-calendar"></select>
+      </label>
 
       <label class="field">Название
         <input id="f-summary" required maxlength="200" autocomplete="off" placeholder="Например, созвон с командой">

@@ -89,9 +89,12 @@ export async function connectGoogle() {
     refreshToken: tokens.refresh_token || '',
     expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000 - 60_000,
     label: calendar?.summary || 'Google Календарь',
+    // id primary-календаря у Google совпадает с адресом аккаунта — это и есть почта,
+    // и она приходит без дополнительных OAuth-скоупов.
+    email: calendar?.id || '',
   };
   await setAuth(auth);
-  return { label: auth.label, hasRefreshToken: Boolean(auth.refreshToken) };
+  return { label: auth.label, email: auth.email, hasRefreshToken: Boolean(auth.refreshToken) };
 }
 
 export async function getAccessToken({ force = false } = {}) {
@@ -116,6 +119,7 @@ export async function authStatus() {
   return {
     connected: true,
     label: auth.label || 'Google Календарь',
+    email: auth.email || '',
     hasRefreshToken: Boolean(auth.refreshToken),
   };
 }

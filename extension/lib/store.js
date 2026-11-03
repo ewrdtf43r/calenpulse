@@ -4,6 +4,7 @@ const DEFAULTS = {
   localNotifications: true,
   reminders: [60, 10],
   hiddenCalendars: [],
+  defaultCalendarId: '',
   oauth: { clientId: '', clientSecret: '' },
   telegram: { enabled: false, botToken: '', chatId: '' },
   discord: { enabled: false, webhookUrl: '' },

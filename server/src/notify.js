@@ -57,10 +57,11 @@ export function formatWhen(startISO, endISO, timeZone) {
 }
 
 export function buildReminderText({ event, lead, timezone }) {
+  const when = formatWhen(event.start?.dateTime, event.end?.dateTime, timezone);
   const lines = [
     `⏰ ${leadLabel(lead)}`,
     event.summary || '(без названия)',
-    `📅 ${formatWhen(event.start?.dateTime, event.end?.dateTime, timezone)}`,
+    `📅 ${when}${event.calendarName ? ` · ${event.calendarName}` : ''}`,
   ];
   if (event.location) lines.push(`📍 ${event.location}`);
   if (event.htmlLink) lines.push(event.htmlLink);

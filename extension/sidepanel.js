@@ -1,10 +1,13 @@
+import { createEventEditor } from './lib/event-editor.js';
+
 const $ = (selector) => document.querySelector(selector);
 
 const state = {
   events: [],
   calendars: [],
+  writableCalendars: [],
+  colors: { event: {} },
   hiddenCalendars: new Set(),
-  editing: null,
   settings: null,
 };
 
@@ -213,7 +216,9 @@ function renderEvents() {
     const card = document.createElement('article');
     card.className = `event${isAllDay(event) ? ' all-day' : ''}`;
     card.tabIndex = 0;
-    if (event.color) card.style.borderLeftColor = event.color;
+    const calColor = event.color || '#7c8cff';
+    card.style.setProperty('--cal-color', calColor);
+    card.style.setProperty('--event-color', state.colors.event?.[event.colorId]?.background || calColor);
 
     const time = document.createElement('div');
     time.className = 'event-time';
@@ -252,7 +257,7 @@ function renderEvents() {
     if (bits.length) body.append(meta);
     card.append(time, body);
 
-    const open = () => openEditor(event);
+    const open = () => editor.open(event);
     card.addEventListener('click', open);
     card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -269,15 +274,20 @@ async function loadEvents() {
   showState('loading');
   try {
     const now = Date.now();
-    const [calendars, events] = await Promise.all([
+    const [calendars, events, colors] = await Promise.all([
       send('calendars:list'),
       send('events:list', {
         timeMin: new Date(now - 3_600_000).toISOString(),
         timeMax: new Date(now + 14 * 86_400_000).toISOString(),
       }),
+      send('colors:get').catch(() => ({ event: {} })),
     ]);
     state.calendars = calendars.filter((cal) => cal.selected && cal.accessRole !== 'freeBusyReader');
+    state.writableCalendars = calendars.filter(
+      (cal) => cal.accessRole === 'owner' || cal.accessRole === 'writer'
+    );
     state.events = events;
+    state.colors = colors || { event: {} };
     renderFilters();
     renderEvents();
   } catch (e) {
@@ -293,135 +303,14 @@ async function loadEvents() {
   }
 }
 
-function toInputDate(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function toInputTime(date) {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
-function nextSlot() {
-  const start = new Date();
-  start.setSeconds(0, 0);
-  start.setMinutes(Math.ceil((start.getMinutes() + 1) / 30) * 30);
-  const end = new Date(start.getTime() + 3_600_000);
-  return { start, end };
-}
-
-function openEditor(event = null) {
-  if (event && isAllDay(event)) {
-    toast('События на весь день редактируются в Google Календаре');
-    if (event.htmlLink) chrome.tabs.create({ url: event.htmlLink });
-    return;
-  }
-  if (event && (event.accessRole === 'reader' || event.accessRole === 'freeBusyReader')) {
-    toast('Календарь только для чтения — открываю событие в Google');
-    if (event.htmlLink) chrome.tabs.create({ url: event.htmlLink });
-    return;
-  }
-
-  state.editing = event ? { id: event.id, calendarId: event.calendarId } : null;
-  $('#editor-title').textContent = event ? 'Событие' : 'Новое событие';
-  $('#editor-delete').hidden = !event;
-  $('#form-error').hidden = true;
-  $('#editor-calendar').hidden = !event || event.primary;
-  $('#editor-calendar').textContent = event && !event.primary ? `Календарь: ${event.calendarName}` : '';
-
-  if (event) {
-    const start = startDate(event);
-    const end = endDate(event);
-    $('#f-summary').value = event.summary;
-    $('#f-date').value = toInputDate(start);
-    $('#f-start').value = toInputTime(start);
-    $('#f-end').value = toInputTime(end);
-  } else {
-    const { start, end } = nextSlot();
-    $('#f-summary').value = '';
-    $('#f-date').value = toInputDate(start);
-    $('#f-start').value = toInputTime(start);
-    $('#f-end').value = toInputTime(end);
-  }
-  $('#f-location').value = event?.location || '';
-  $('#f-description').value = event?.description || '';
-
-  $('#editor').showModal();
-  if (!event) $('#f-summary').focus();
-}
-
-function closeEditor() {
-  $('#editor').close();
-  state.editing = null;
-}
-
-function formError(message) {
-  const el = $('#form-error');
-  el.textContent = message;
-  el.hidden = false;
-}
-
-async function submitForm(e) {
-  e.preventDefault();
-  const summary = $('#f-summary').value.trim();
-  const date = $('#f-date').value;
-  const from = $('#f-start').value;
-  const to = $('#f-end').value;
-
-  if (!summary) return formError('Введите название события');
-  if (!date || !from || !to) return formError('Заполните дату и время');
-
-  const start = new Date(`${date}T${from}:00`);
-  const end = new Date(`${date}T${to}:00`);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return formError('Некорректная дата');
-  if (end <= start) return formError('Конец должен быть позже начала');
-
-  const payload = {
-    summary,
-    description: $('#f-description').value.trim(),
-    location: $('#f-location').value.trim(),
-    startISO: start.toISOString(),
-    endISO: end.toISOString(),
-    reminders: state.settings.reminders,
-  };
-
-  const saveButton = $('#editor-save');
-  saveButton.disabled = true;
-  try {
-    if (state.editing) {
-      await send('events:update', {
-        id: state.editing.id,
-        calendarId: state.editing.calendarId,
-        ...payload,
-      });
-    } else {
-      await send('events:create', payload);
-    }
-    closeEditor();
-    toast('Сохранено в Google Календаре');
-    await loadEvents();
-  } catch (err) {
-    formError(err.message);
-  } finally {
-    saveButton.disabled = false;
-  }
-}
-
-async function deleteCurrent() {
-  if (!state.editing) return;
-  const summary = $('#f-summary').value.trim() || 'это событие';
-  if (!confirm(`Удалить «${summary}»?`)) return;
-  try {
-    await send('events:delete', {
-      id: state.editing.id,
-      calendarId: state.editing.calendarId,
-    });
-    closeEditor();
-    toast('Событие удалено');
-    await loadEvents();
-  } catch (err) {
-    formError(err.message);
-  }
-}
+const editor = createEventEditor({
+  send,
+  toast,
+  getCalendars: () => state.writableCalendars,
+  getSettings: () => state.settings,
+  onSaved: () => loadEvents(),
+  openExternal: (event) => chrome.tabs.create({ url: event.htmlLink }),
+});
 
 async function connect() {
   const button = $('#connect');
@@ -429,7 +318,7 @@ async function connect() {
   button.textContent = 'Открываю Google…';
   try {
     const result = await send('auth:connect');
-    $('#account').textContent = result.label || '';
+    $('#account').textContent = result.email || result.label || '';
     if (result.syncError) toast(`Google подключён, но сервер: ${result.syncError}`);
     state.settings = await send('settings:get');
     state.hiddenCalendars = new Set(state.settings.hiddenCalendars || []);
@@ -449,6 +338,9 @@ async function connect() {
 
 async function init() {
   $('#refresh').addEventListener('click', () => loadEvents());
+  $('#open-grid').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('calendar.html') });
+  });
   $('#settings').addEventListener('click', () => chrome.runtime.openOptionsPage());
   $('#retry').addEventListener('click', async () => {
     const status = await send('auth:status').catch(() => ({ connected: false }));
@@ -459,14 +351,7 @@ async function init() {
     loadEvents();
   });
   $('#connect').addEventListener('click', connect);
-  $('#new-event').addEventListener('click', () => openEditor());
-  $('#event-form').addEventListener('submit', submitForm);
-  $('#editor-cancel').addEventListener('click', closeEditor);
-  $('#editor-close').addEventListener('click', closeEditor);
-  $('#editor-delete').addEventListener('click', deleteCurrent);
-  $('#editor').addEventListener('click', (e) => {
-    if (e.target === $('#editor')) closeEditor();
-  });
+  $('#new-event').addEventListener('click', () => editor.open());
 
   state.settings = await send('settings:get');
   state.hiddenCalendars = new Set(state.settings.hiddenCalendars || []);
@@ -475,7 +360,7 @@ async function init() {
     showConnect();
     return;
   }
-  $('#account').textContent = status.label || '';
+  $('#account').textContent = status.email || status.label || '';
   await loadEvents();
 
   setInterval(() => {

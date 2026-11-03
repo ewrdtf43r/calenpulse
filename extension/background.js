@@ -1,7 +1,7 @@
 import { connectGoogle, disconnectGoogle, authStatus, getAccessToken } from './lib/auth.js';
 import * as calendar from './lib/calendar.js';
 import { getSettings, saveSettings, getSentMap, saveSentMap } from './lib/store.js';
-import { pushConfig, getServerStatus, sendServerTest } from './lib/server.js';
+import { pushConfig, getServerStatus, sendServerTest, deleteAccount } from './lib/server.js';
 
 const TICK_ALARM = 'calenpulse-tick';
 const SYNC_ALARM = 'calenpulse-sync';
@@ -152,11 +152,23 @@ const handlers = {
     return { ...result, syncError };
   },
   'auth:disconnect': async () => {
+    const settings = await getSettings();
+    let serverDeleted = false;
+    let serverError = '';
+    if (settings.serverUrl && settings.syncKey) {
+      try {
+        await deleteAccount();
+        serverDeleted = true;
+      } catch (e) {
+        if (!/не найден|404/.test(e.message)) serverError = e.message || String(e);
+      }
+    }
     await disconnectGoogle();
-    return { ok: true };
+    return { serverDeleted, serverError };
   },
   'auth:status': authStatus,
   'calendars:list': () => calendar.listCalendars(),
+  'colors:get': () => calendar.getColors(),
   'events:list': (query) => listAllEvents(query),
   'events:create': (input) => calendar.createEvent(input),
   'events:update': ({ id, calendarId, ...input }) => calendar.updateEvent(id, input, calendarId),
@@ -165,6 +177,7 @@ const handlers = {
   'settings:save': (patch) => saveSettings(patch),
   'server:sync': () => pushConfig(),
   'server:status': () => getServerStatus(),
+  'server:delete': () => deleteAccount(),
   'server:test': ({ channels }) => sendServerTest(channels),
   'notify:test': async () => {
     const id = `calenpulse-test-${Date.now()}`;

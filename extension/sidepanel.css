@@ -99,6 +99,7 @@ button:disabled { opacity: 0.55; cursor: default; }
   align-items: center;
   gap: 8px;
   min-width: 0;
+  overflow: hidden;
 }
 
 .brand img { border-radius: 6px; }
@@ -113,7 +114,7 @@ button:disabled { opacity: 0.55; cursor: default; }
   max-width: 130px;
 }
 
-.top-actions { display: flex; gap: 2px; }
+.top-actions { display: flex; gap: 2px; flex: 0 0 auto; }
 
 main {
   flex: 1 1 auto;
@@ -222,17 +223,20 @@ main {
   gap: 12px;
   padding: 12px;
   margin-bottom: 8px;
-  background: var(--bg-elev);
+  --cal-color: var(--accent);
+  --event-color: var(--cal-color);
+  background: color-mix(in srgb, var(--event-color) 12%, var(--bg-elev));
   border: 1px solid var(--line);
-  border-left-width: 3px;
+  border-left: 3px solid var(--cal-color);
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 
 .event:hover {
-  background: var(--bg-hover);
+  background: color-mix(in srgb, var(--event-color) 20%, var(--bg-elev));
   border-color: rgba(124, 140, 255, 0.35);
+  border-left-color: var(--cal-color);
 }
 
 .event-time {
@@ -266,12 +270,6 @@ main {
   border-radius: 50%;
   margin-right: 5px;
   vertical-align: 1px;
-}
-
-.editor-calendar {
-  margin: -6px 0 12px;
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .bottombar {
@@ -324,7 +322,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.55); }
   outline: none;
 }
 
-.field input:focus, .field textarea:focus {
+.field input:focus, .field textarea:focus, .field select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(124, 140, 255, 0.18);
 }
