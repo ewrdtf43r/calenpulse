@@ -117,23 +117,23 @@ sudo mkdir -p /opt/calenpulse && sudo chown "$USER":"$USER" /opt/calenpulse
 ```
 
 ```bash
-git clone https://github.com/<ваш-логин>/CalenPulse.git /opt/calenpulse
+git clone https://github.com/<ваш-логин>/CalenPulse.git /opt/calenpulse/repo
 ```
 
 ### 3.3. Зависимости и конфиг
 
 ```bash
-cd /opt/calenpulse/server && npm ci --omit=dev
+cd /opt/calenpulse/repo/server && npm ci --omit=dev
 ```
 
 ```bash
-cp /opt/calenpulse/server/.env.example /opt/calenpulse/server/.env
+cp /opt/calenpulse/repo/server/.env.example /opt/calenpulse/repo/server/.env
 ```
 
 Проверка локально (без HTTPS):
 
 ```bash
-cd /opt/calenpulse/server && ALLOW_HTTP=1 node src/index.js
+cd /opt/calenpulse/repo/server && ALLOW_HTTP=1 node src/index.js
 ```
 
 ```bash
@@ -187,7 +187,7 @@ sudo npm install -g pm2
 ```
 
 ```bash
-cd /opt/calenpulse/server && pm2 start ecosystem.config.cjs
+cd /opt/calenpulse/repo/server && pm2 start ecosystem.config.cjs
 ```
 
 ```bash
@@ -247,10 +247,18 @@ journalctl -u calenpulse-tunnel --no-pager | grep -o "https://[a-z0-9-]*\.tryclo
 
 ```
 сервер          87.58.205.57 (Ubuntu 24.04, Node 22)
-код             /opt/calenpulse/server
-pm2             calenpulse (порт 8787, наружу закрыт ufw) + соседний ds-bot не трогали
+код             /opt/calenpulse/repo        (git clone, ветка main)
+приложение      /opt/calenpulse/repo/server
+pm2             calenpulse (порт 8787, наружу закрыт ufw); соседний ds-bot не трогали
 https           systemd-юнит calenpulse-tunnel → https://<случайное>.trycloudflare.com
-данные          /opt/calenpulse/server/data/{accounts.json,enc.key}
+данные          /opt/calenpulse/repo/server/data/{accounts.json,enc.key} (права 600/700)
+резерв          /opt/calenpulse/server.old-scp — прежняя копия, скачанная через scp
+```
+
+Обновление до последнего коммита:
+
+```bash
+cd /opt/calenpulse/repo && git pull && (cd server && npm ci --omit=dev) && pm2 restart calenpulse
 ```
 
 Проверка после любой перезагрузки:
@@ -281,7 +289,7 @@ server/data/enc.key         ключ шифрования (не коммитит
 интервалы, статус каналов и метки времени.
 
 ```bash
-cd /opt/calenpulse/server
+cd /opt/calenpulse/repo/server
 node tools/admin.mjs list                    # все аккаунты: хеш, почта, каналы, когда синхронизировались
 node tools/admin.mjs show 3a8f               # подробности по префиксу хеша
 node tools/admin.mjs delete 3a8f --restart   # удалить запись
